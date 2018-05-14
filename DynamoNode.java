@@ -12,7 +12,7 @@ public class DynamoNode{
 	private Socket socket = null;
 	Ring myRing;
 	private ExecutorService threadPool = Executors.newFixedThreadPool(10);
-	ConcurrentHashMap<Integer, Object> dataMap;
+	ConcurrentHashMap<Object, ValueClock> dataMap;
 	DynamoNode(String fileName)
 	{
 		myPortNum = makeNewSocket();

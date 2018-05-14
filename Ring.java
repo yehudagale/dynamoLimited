@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Collections;
 import java.util.HashSet;
-public class Ring extends Message implements Serializable {
+public class Ring implements Serializable, Message {
 	ArrayList<Integer> virtualNodes;
 	HashMap<Integer, Integer> virtual_to_real;
 	Integer replicationNum;
@@ -44,7 +44,7 @@ public class Ring extends Message implements Serializable {
 		// 	System.out.println(key + ", " + virtual_to_real.get(key));
 		// }
 	}
-	public List<Integer> getLocations(Object toInsert, int extraNodes)
+	public HashSet<Integer> getSetLocations(Object toInsert, int extraNodes)
 	{
 		Integer key = toInsert.hashCode();
 		// System.out.println("key is:" + key);
@@ -59,11 +59,19 @@ public class Ring extends Message implements Serializable {
 				tempRepNum++;
 			}
 		}
-		return new ArrayList<Integer>(toRet);
+		return toRet;
+	}
+	public List<Integer> getLocations(Object toInsert, int extraNodes)
+	{
+		return new ArrayList<Integer>(getSetLocations(toInsert, extraNodes));
 	}
 	public List<Integer> getLocations(Object toInsert)
 	{
 		return getLocations(toInsert, 0);
+	}
+	public HashSet<Integer> getSetLocations(Object toInsert)
+	{
+		return getSetLocations(toInsert, 0);
 	}
 	public List<Integer> prefList(Object toInsert)
 	{

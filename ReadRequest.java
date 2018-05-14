@@ -1,12 +1,9 @@
 import java.io.Serializable;
-public class ReadRequest extends Message implements Serializable {
-	public Object key;
-	public Integer responsePort;
+public class ReadRequest extends SimpleRead implements Serializable {
 	boolean fowarded;		
 	ReadRequest(Object key, Integer responsePort)
 	{
-		this.key = key;
-		this.responsePort = responsePort;
+		super(key, responsePort);
 		this.fowarded = false;
 	}
 }

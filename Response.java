@@ -1,3 +1,2 @@
-public class Response {
-	
+public interface Response extends Message {
 }
