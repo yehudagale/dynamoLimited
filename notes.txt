@@ -1,0 +1,8 @@
+things to do:
+1. impliment simple reads
+2. impliment simple writes
+3. impliment data versioning
+4. impliment read repair
+5. impliment request retrying
+6. fix hashing
+6. write some tests
