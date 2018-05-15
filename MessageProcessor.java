@@ -31,6 +31,17 @@ public class MessageProcessor implements Runnable {
 		messageType = messageType.substring(messageType.indexOf(" ")).trim();
 		System.out.println("messageType:" + messageType);
 		switch (messageType) {
+			case "SleepMessage":
+				node.responsePort = ((SleepMessage) messageRecieved).responsePort;
+				node.asleep = true;
+				// boolean sent = true;
+				// while(sent == true)
+				// {
+				// 	System.out.println("sending dummy");
+				// 	sent = Client.sendMessage(new DummyMessage(), node.myPortNum, 10);
+				// }
+				// Client.sendMessage(new SleepResponse)
+				break;
 			case "WriteRequest":
 				WriteRequest write = (WriteRequest) messageRecieved;
 				if (checkIfMine(write)) {
@@ -53,9 +64,24 @@ public class MessageProcessor implements Runnable {
 				SimpleRead query = (SimpleRead) messageRecieved;
 				proccessSimpleRead(query);
 			break;
+			case "SimpleWrite":
+				SimpleWrite wQuery = (SimpleWrite) messageRecieved;
+				proccessSimpleWrite(wQuery);
+			break;
 			default:
 					System.out.println("Error:Unrecognized message");	
 			
+		}
+	}
+	private void proccessSimpleWrite(SimpleWrite toWrite)
+	{
+		System.out.println("writing: " + toWrite.value +  "from: " + node.myPortNum + "with key: " + toWrite.key);
+		ValueClock current = node.dataMap.get(toWrite.key);
+		if (current == null) {
+			node.dataMap.put(toWrite.key, toWrite.value);
+		}
+		else{
+			node.dataMap.put(toWrite.key, current.resolveClocks(toWrite.value));
 		}
 	}
 	private void proccessSimpleRead(SimpleRead request)
@@ -76,9 +102,10 @@ public class MessageProcessor implements Runnable {
 	private void proccessRead(ReadRequest request)
 	{
 		ValueClock myValue = node.dataMap.get(request.key);
+		System.out.println("requesting:" + request.key +"from: " + node.myPortNum + "with value: " + myValue);
 		ReadResponse response = new ReadResponse(myValue, request.key, node.myPortNum);
-		if (response.values = null) {
-			response.values = new 	ValueClock(null, node.myPortNum , 1)
+		if (response.values == null) {
+			response.values = new ValueClock(null, node.myPortNum , 1);
 		}
 		Client.sendMessage(response, request.responsePort);
 		//put in read repair here
@@ -88,7 +115,15 @@ public class MessageProcessor implements Runnable {
 		//put in retry info here
 		request.fowarded = true;
 		List<Integer> presedenceList =  node.myRing.getLocations(request.key);
-		Client.sendMessage(request, presedenceList.get(0));
+		boolean sent = false;
+		for (Integer dest : presedenceList) {
+			sent = Client.sendMessage(request, dest, 10);
+			System.out.println("sent to: " + dest + "sent is: " + sent);
+			if (sent) {
+				return;
+			}
+		}
+		Client.sendMessage(new Response(true), request.responsePort);
 	}
 	private void proccessWrite(WriteRequest request)
 	{
@@ -97,17 +132,30 @@ public class MessageProcessor implements Runnable {
 		ValueClock clock;
 		if (request.context == null) {
 			//change when implimenting versioning
-			clock = new ValueClock(request.value, node.myPortNum, 1);
+			clock = new ValueClock(request.value, node.myPortNum, node.counter.getAndIncrement());
+			node.dataMap.put(request.key, clock);
 		}
 		else {
-			request.context.values.resolveValues(request.value, node.myPortNum, 1);
-			clock = request.context.values;
+			clock = request.context.values.maxClock(request.value, node.myPortNum, node.counter.getAndIncrement());
+			//clock = request.context.values.resolveClocks(clock);
 		}
-		Client.sendMessage(request, presedenceList.get(0));
+
+		// Client.sendMessage(request, presedenceList.get(0));
 		//change 0 to new port for responses if implimenting write response
 		SimpleWrite toWrite = new SimpleWrite(request.key, clock, 0);
+		this.proccessSimpleWrite(toWrite);
+		Client.sendMessage(new WriteResponse(clock, request.key, node.myPortNum), request.responsePort);
+		// System.out.println("at least I made it here");
 		for (Integer location : presedenceList) {
-			Client.sendMessage(request, presedenceList.get(0));
+			// System.out.println("location:" + location + " myPortNum" + node.myPortNum + "equal:" + (location - node.myPortNum));
+			if (!location.equals(node.myPortNum)) {
+				System.out.println(location);
+				Client.sendMessage(toWrite, location);
+			}
+			// else{
+			// 	System.out.print("skipping me");
+			// }
 		}
+
 	}
 }

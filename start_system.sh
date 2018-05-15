@@ -14,5 +14,5 @@ while [[ $lines -lt $num_to_start ]]; do
 	lines=$(wc -l < ./$fileName)
 	sleep 1
 done
-java Client $fileName $repNum &
+java Client $fileName $repNum
 echo "done $lines"

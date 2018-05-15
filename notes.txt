@@ -2,6 +2,7 @@ things to do:
 1. impliment simple reads
 2. impliment simple writes
 3. impliment data versioning
+--
 4. impliment read repair
 5. impliment request retrying from client
 5.5 impliment request retrying to coordinator
