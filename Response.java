@@ -1,5 +1,5 @@
 import java.io.Serializable;
-public class Response implements Message, Serializable  {
+public class Response extends Message implements Serializable  {
 	boolean failed;
 	Response(boolean failed)
 	{

@@ -102,10 +102,10 @@ public class MessageProcessor implements Runnable {
 	private void proccessRead(ReadRequest request)
 	{
 		ValueClock myValue = node.dataMap.get(request.key);
-		System.out.println("requesting:" + request.key +"from: " + node.myPortNum + "with value: " + myValue);
+		System.out.println("requesting: " + request.key +" from: " + node.myPortNum + " with value: " + myValue);
 		ReadResponse response = new ReadResponse(myValue, request.key, node.myPortNum);
 		if (response.values == null) {
-			response.values = new ValueClock(null, node.myPortNum , 1);
+			response.values = new ValueClock(null, node.myPortNum , 0);
 		}
 		Client.sendMessage(response, request.responsePort);
 		//put in read repair here

@@ -51,8 +51,18 @@ public class DynamoNode{
 			socket = messageGetter.accept();
 			System.out.println("Connected");
 			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-
-			this.myRing = (Ring) inStream.readObject();
+			// if (! message.) {
+				
+			// }
+			Message messageRecieved = (Message) inStream.readObject();
+			String messageType = messageRecieved.getClass().toString();
+			messageType = messageType.substring(messageType.indexOf(" ")).trim();
+			if (!(messageType.equals("Ring"))) {
+				Client.sendMessage(new RingRequest(), message.ringServer)
+			}
+			else {
+				this.myRing = (Ring) message;
+			}
 			System.out.println("Object received = " + myRing);
 			socket.close();
 
@@ -67,7 +77,7 @@ public class DynamoNode{
 	}
 	public void acceptMessages()
 	{
-		System.out.println(myRing.getLocations(1000));
+		// System.out.println(myRing.getLocations(1000));
 		while(true)
 		{
 		//used http://tutorials.jenkov.com/java-multithreaded-servers/thread-pooled-server.html			try {

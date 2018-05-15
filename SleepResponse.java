@@ -1,5 +1,5 @@
 import java.io.Serializable;
-public class SleepResponse implements Serializable, Message  {
+public class SleepResponse extends Message implements Serializable  {
 	Integer tempPort;
 	SleepResponse(Integer tempPort)
 	{

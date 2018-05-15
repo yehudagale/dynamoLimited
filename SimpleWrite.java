@@ -1,5 +1,5 @@
 import java.io.Serializable;
-public class SimpleWrite implements Serializable, Message {
+public class SimpleWrite extends Message implements Serializable {
 	public Object key;
 	public ValueClock value;
 	//this will only be used if we use W > 1

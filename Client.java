@@ -21,6 +21,7 @@ public class Client {
 	private Integer portNum;
 	private ReadResponse lastRead;
 	private HashMap<Integer, Integer> sleepingNodes;
+	private Ring ring;
 	Client(String filePath)
 	{
 		placeInList = 0;
@@ -67,6 +68,7 @@ public class Client {
 	{
 		Ring ring = new Ring(ports, repNum, EXTRA);
 		for (Integer port : ports) {
+			System.out.println("sending ring to port: " + port);
 			sendMessage(ring, port);
 		}
 	}

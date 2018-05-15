@@ -4,11 +4,12 @@ import java.util.HashMap;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.HashSet;
-public class ValueClock implements Message, Serializable{
+public class ValueClock extends Message implements  Serializable{
 	private ArrayList<Object> values;
 	private ArrayList<HashMap<Integer, Integer>> vectorClock;
 	ValueClock(Object value, Integer creatingProccess, Integer clockNum)
 	{
+		super(creatingProccess);
 		this.values = new ArrayList<Object>();
 		this.vectorClock = new ArrayList<>();
 		HashMap<Integer, Integer> map1 = new HashMap<>();

@@ -1,5 +1,5 @@
 import java.io.Serializable;
-public class SimpleRead implements Serializable, Message {
+public class SimpleRead extends Message implements Serializable {
 	public Object key;
 	public Integer responsePort;
 	SimpleRead(Object key, Integer responsePort)

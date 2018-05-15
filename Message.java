@@ -1,3 +1,8 @@
 import java.io.Serializable;
-public interface Message {
+public abstract class Message {
+	Integer ringServer;
+	Message(Integer ringServer)
+	{
+		this.ringServer = ringServer;
+	}
 }
