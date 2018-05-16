@@ -1,4 +1,7 @@
 import java.io.Serializable;
-public class WakeUpMessage implements Serializable, Message  {
-	
+public class WakeUpMessage extends Message implements Serializable  {
+	WakeUpMessage()
+	{
+		super(-1);
+	}
 }

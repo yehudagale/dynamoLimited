@@ -13,11 +13,12 @@ public class DynamoNode{
 	Integer myPortNum;
 	private Socket socket = null;
 	Ring myRing;
+	boolean ignoreNext = false;
 	private ExecutorService threadPool = Executors.newFixedThreadPool(10);
 	ConcurrentHashMap<Object, ValueClock> dataMap;
 	AtomicInteger counter;
 	//for testing purposes
-	boolean asleep = false;
+	boolean alive = true;
 	Integer responsePort = null;
 	DynamoNode(String fileName)
 	{
@@ -58,10 +59,10 @@ public class DynamoNode{
 			String messageType = messageRecieved.getClass().toString();
 			messageType = messageType.substring(messageType.indexOf(" ")).trim();
 			if (!(messageType.equals("Ring"))) {
-				Client.sendMessage(new RingRequest(), message.ringServer)
+				Client.sendMessage(new RingRequest(myPortNum), messageRecieved.ringServer);
 			}
 			else {
-				this.myRing = (Ring) message;
+				this.myRing = (Ring) messageRecieved;
 			}
 			System.out.println("Object received = " + myRing);
 			socket.close();
@@ -78,7 +79,7 @@ public class DynamoNode{
 	public void acceptMessages()
 	{
 		// System.out.println(myRing.getLocations(1000));
-		while(true)
+		while(alive)
 		{
 		//used http://tutorials.jenkov.com/java-multithreaded-servers/thread-pooled-server.html			try {
 	        socket = null;
@@ -89,61 +90,66 @@ public class DynamoNode{
 	        }
 	        this.threadPool.execute(
 	            new MessageProcessor(socket, this));
-	        if (asleep) {
-	        	System.out.println("got all the way here");
-	        	this.waitForWake();
-	        }
+	        // if (asleep) {
+	        // 	System.out.println("got all the way here");
+	        // 	this.waitForWake();
+	        // }
+	    }
+	    try {
+	        messageGetter.close();
+	    } catch (IOException e) {
+	    	e.printStackTrace();
 	    }
 
 	}
-	private void waitForWake()
-	{
-		ServerSocket tempSocket = null;
-		try {
-		   this.messageGetter.close();
-		   tempSocket = new ServerSocket(0);
-		}
-		catch (IOException e) {
-		   System.out.println(e);
-		}
-		Client.sendMessage(new SleepResponse(tempSocket.getLocalPort()), this.responsePort);
-		while(asleep)
-		{
-		//used http://tutorials.jenkov.com/java-multithreaded-servers/thread-pooled-server.html			try {
-	        socket = null;
-	        try {
-	            socket = tempSocket.accept();
-	        } catch (IOException e) {
-	        	e.printStackTrace();
-	        }
-	        Message messageRecieved = null;
-	        try{
-	        	ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-	        	messageRecieved = (Message) inStream.readObject();
-	        	System.out.println("Object received while waiting to wake = " + messageRecieved);
-	        	socket.close();
-	        } catch (SocketException se) {
-	        	se.printStackTrace();
-	        } catch (IOException e) {
-	        	e.printStackTrace();
-	        } catch (ClassNotFoundException cn) {
-	        	cn.printStackTrace();
-	        }
-	        String messageType = messageRecieved.getClass().toString();
-	        messageType = messageType.substring(messageType.indexOf(" ")).trim();
-	        System.out.println("messageType:" + messageType);
-        	if (messageType.equals("WakeUpMessage")) {
-        		asleep = false;
-        		try{
-        			this.messageGetter = new ServerSocket(this.myPortNum);
-        		}catch (IOException e) {
-        			e.printStackTrace();
-        		}
-        		return;
-        	}
-	    }
+	// private void waitForWake()
+	// {
+	// 	ServerSocket tempSocket = null;
+	// 	try {
+	// 	   this.messageGetter.close();
+	// 	   tempSocket = new ServerSocket(0);
+	// 	}
+	// 	catch (IOException e) {
+	// 	   System.out.println(e);
+	// 	}
+	// 	Client.sendMessage(new SleepResponse(tempSocket.getLocalPort()), this.responsePort);
+	// 	while(asleep)
+	// 	{
+	// 	//used http://tutorials.jenkov.com/java-multithreaded-servers/thread-pooled-server.html			try {
+	//         socket = null;
+	//         try {
+	//             socket = tempSocket.accept();
+	//         } catch (IOException e) {
+	//         	e.printStackTrace();
+	//         }
+	//         Message messageRecieved = null;
+	//         try{
+	//         	ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+	//         	messageRecieved = (Message) inStream.readObject();
+	//         	System.out.println("Object received while waiting to wake = " + messageRecieved);
+	//         	socket.close();
+	//         } catch (SocketException se) {
+	//         	se.printStackTrace();
+	//         } catch (IOException e) {
+	//         	e.printStackTrace();
+	//         } catch (ClassNotFoundException cn) {
+	//         	cn.printStackTrace();
+	//         }
+	//         String messageType = messageRecieved.getClass().toString();
+	//         messageType = messageType.substring(messageType.indexOf(" ")).trim();
+	//         System.out.println("messageType:" + messageType);
+ //        	if (messageType.equals("WakeUpMessage")) {
+ //        		asleep = false;
+ //        		try{
+ //        			this.messageGetter = new ServerSocket(this.myPortNum);
+ //        		}catch (IOException e) {
+ //        			e.printStackTrace();
+ //        		}
+ //        		return;
+ //        	}
+	//     }
 
-	}
+	// }
 	public static void main(String[] args) {
 		System.out.println(args);
 		DynamoNode thisNode = new DynamoNode(args[0]);

@@ -31,9 +31,12 @@ public class MessageProcessor implements Runnable {
 		messageType = messageType.substring(messageType.indexOf(" ")).trim();
 		System.out.println("messageType:" + messageType);
 		switch (messageType) {
+			case "KillMessage":
+				node.alive = false;
+				break;
 			case "SleepMessage":
-				node.responsePort = ((SleepMessage) messageRecieved).responsePort;
-				node.asleep = true;
+				// node.responsePort = ((SleepMessage) messageRecieved).responsePort;
+				node.ignoreNext = true;
 				// boolean sent = true;
 				// while(sent == true)
 				// {
@@ -45,6 +48,7 @@ public class MessageProcessor implements Runnable {
 			case "WriteRequest":
 				WriteRequest write = (WriteRequest) messageRecieved;
 				if (checkIfMine(write)) {
+					System.out.println("doing write myself");
 					proccessWrite(write);
 				}
 				else{
@@ -75,6 +79,10 @@ public class MessageProcessor implements Runnable {
 	}
 	private void proccessSimpleWrite(SimpleWrite toWrite)
 	{
+		if (node.ignoreNext) {
+			node.ignoreNext = false;
+			return;
+		}
 		System.out.println("writing: " + toWrite.value +  "from: " + node.myPortNum + "with key: " + toWrite.key);
 		ValueClock current = node.dataMap.get(toWrite.key);
 		if (current == null) {
@@ -147,14 +155,14 @@ public class MessageProcessor implements Runnable {
 		Client.sendMessage(new WriteResponse(clock, request.key, node.myPortNum), request.responsePort);
 		// System.out.println("at least I made it here");
 		for (Integer location : presedenceList) {
-			// System.out.println("location:" + location + " myPortNum" + node.myPortNum + "equal:" + (location - node.myPortNum));
+			System.out.println("location:" + location + " myPortNum" + node.myPortNum + "equal:" + (location - node.myPortNum));
 			if (!location.equals(node.myPortNum)) {
 				System.out.println(location);
 				Client.sendMessage(toWrite, location);
 			}
-			// else{
-			// 	System.out.print("skipping me");
-			// }
+			else{
+				System.out.print("skipping me");
+			}
 		}
 
 	}

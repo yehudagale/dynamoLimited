@@ -13,6 +13,9 @@ import java.util.Scanner;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.net.InetSocketAddress;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 public class Client {
 	private final int EXTRA = 0;
 	private List<Integer> ports;
@@ -22,8 +25,14 @@ public class Client {
 	private ReadResponse lastRead;
 	private HashMap<Integer, Integer> sleepingNodes;
 	private Ring ring;
+	// private static Set<Integer> toSkip;
 	Client(String filePath)
 	{
+		// if (toSkip ==  null) {
+			// toSkip = ConcurrentHashMap.newKeySet();
+		// }
+		// System.out.println(toSkip);
+		// toSkip = new HashSet<>();
 		placeInList = 0;
 		this.getPorts(filePath);
 		this.portNum = makeNewSocket();
@@ -67,9 +76,13 @@ public class Client {
 	public void sendRings(Integer repNum)
 	{
 		Ring ring = new Ring(ports, repNum, EXTRA);
+		this.ring = ring;
 		for (Integer port : ports) {
-			System.out.println("sending ring to port: " + port);
-			sendMessage(ring, port);
+			boolean sent = false;
+			while(! sent){
+				System.out.println("sending ring to port: " + port);
+				sent = sendMessage(ring, port, 10);
+			}
 		}
 	}
 	private Integer getNextAddress()
@@ -80,6 +93,9 @@ public class Client {
 	public static boolean sendMessage(Message toSend, int portNum, int tries)
 	{
 		//used http://www.coderpanda.com/java-socket-programming-transferring-of-java-objects-through-sockets/
+		// if (toSkip.contains(portNum)) {
+		// 	return false;
+		// }
 		boolean isConnected = false;
 		int howMany = tries;
 		while (!isConnected) {
@@ -262,20 +278,36 @@ public class Client {
 				}
 				else if (word.startsWith("sleep")) {
 					Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
+					// this.toSkip.add(dest);
 					boolean sent = sendMessage(new SleepMessage(portNum), dest, 10);
-					if (sent) {
-						this.getSleepResponse(dest);
+					// if (sent) {
+					// 	this.getSleepResponse(dest);
+					// }
+				}
+				else if (word.startsWith("killall")) {
+					for (Integer dest : this.ports) {
+						Client.sendMessage(new KillMessage(), dest, 10);
 					}
+				}
+				else if (word.startsWith("kill")) {
+					Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
+					Client.sendMessage(new KillMessage(), dest, 10);
+				}
+
+				else if (word.startsWith("pref")) {
+					String key = word.substring(word.indexOf(' ') + 1);
+					System.out.println(ring.getLocations(key));
 				}
 				else if (word.startsWith("wake")) {
 					Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
-					Integer trueDest = this.sleepingNodes.get(dest);
-					if (trueDest == null) {
-						System.out.println("This client did not put that node to sleep");
-					}
-					else{
-						sendMessage(new WakeUpMessage(), trueDest);
-					}
+					// Integer trueDest = this.sleepingNodes.get(dest);
+					// if (trueDest == null) {
+					// 	System.out.println("This client did not put that node to sleep");
+					// }
+					// else{
+						sendMessage(new WakeUpMessage(), dest);
+					// }
+					// this.toSkip.remove(dest);
 				}
 				else if (word.startsWith("write")) {
 					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));

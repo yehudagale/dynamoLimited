@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Collections;
 import java.util.HashSet;
-public class Ring implements Serializable, Message {
+public class Ring extends Message implements Serializable {
 	ArrayList<Integer> virtualNodes;
 	HashMap<Integer, Integer> virtual_to_real;
 	Integer replicationNum;
@@ -16,6 +16,7 @@ public class Ring implements Serializable, Message {
 	final Integer VIRTUAL_NUM = 10;
 	Ring(List<Integer> realNodes, Integer replicationNum, Integer numExtra)
 	{
+		super(-1);
 		if (realNodes.size() < replicationNum + numExtra) {
 			throw new IllegalArgumentException("N must be less than or equal to the number of nodes");
 		}
