@@ -54,7 +54,6 @@ public class Client {
 				System.out.println("line is: " + line);
 				ports.add(Integer.valueOf(line));
 				line = reader.readLine();
-
 			}
 			reader.close();
 		} catch (IOException e) {
@@ -96,6 +95,7 @@ public class Client {
 		// if (toSkip.contains(portNum)) {
 		// 	return false;
 		// }
+		System.out.println("sending " + toSend + " to " + portNum);
 		boolean isConnected = false;
 		int howMany = tries;
 		while (!isConnected) {
@@ -214,8 +214,11 @@ public class Client {
 			return null;
 		}
 		try{
+			messageGetter.setSoTimeout(500);
 			Socket socket = this.messageGetter.accept();
+			socket.setSoTimeout(500);
 			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+
 			response = (Response) inStream.readObject();
 			System.out.println("Object received = " + response);
 			socket.close();
@@ -287,6 +290,7 @@ public class Client {
 				else if (word.startsWith("killall")) {
 					for (Integer dest : this.ports) {
 						Client.sendMessage(new KillMessage(), dest, 10);
+						Client.sendMessage(new DummyMessage(), dest, 10);
 					}
 				}
 				else if (word.startsWith("kill")) {
@@ -315,7 +319,7 @@ public class Client {
 					System.out.println("****" + this.sendWrite(key, value, 1));
 				}
 				else if (word.startsWith("tread")) {
-					String key = word.substring(word.indexOf(' ') + 1);
+					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));
 					Integer destination = Integer.valueOf(word.substring(word.lastIndexOf(' ') + 1));
 					System.out.println("****" + this.sendRead(key, 1, destination));
 				}
@@ -333,6 +337,15 @@ public class Client {
 					String value = word.substring(word.lastIndexOf(' ') + 1);;
 					System.out.println("****" + this.sendWriteWithContext(key, value, 1));
 				}
+				else if (word.startsWith("tcwrite")) {
+					Scanner tempScanner = new Scanner(word);
+							tempScanner.next();
+							String key =tempScanner.next();
+							String value = tempScanner.next();
+							Integer dest = tempScanner.nextInt();
+					System.out.println("****" + this.sendWriteWithContext(key, value, 1, dest));
+				}
+
 				else if (word.startsWith("exit")) {
 					exit = true;
 				}

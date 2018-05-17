@@ -3,6 +3,8 @@ import java.net.*;
 import java.io.ObjectInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class MessageProcessor implements Runnable {
 	DynamoNode node;
 	Socket socket;
@@ -34,6 +36,8 @@ public class MessageProcessor implements Runnable {
 			case "KillMessage":
 				node.alive = false;
 				break;
+			case "DummyMessage":
+			break;
 			case "SleepMessage":
 				// node.responsePort = ((SleepMessage) messageRecieved).responsePort;
 				node.ignoreNext = true;
@@ -64,9 +68,14 @@ public class MessageProcessor implements Runnable {
 					fowardRequest(request);
 				}
 			break;
-			case "SimpleRead":
-				SimpleRead query = (SimpleRead) messageRecieved;
+			case "SimpleishRead":
+				SimpleishRead query = (SimpleishRead) messageRecieved;
 				proccessSimpleRead(query);
+			break;
+			case "SimpleReadResponse":
+				SimpleReadResponse resp = (SimpleReadResponse) messageRecieved;
+				System.out.println("resp.key " +resp.uniqueKey);
+				node.readMap.get(resp.uniqueKey).add(resp);
 			break;
 			case "SimpleWrite":
 				SimpleWrite wQuery = (SimpleWrite) messageRecieved;
@@ -92,9 +101,9 @@ public class MessageProcessor implements Runnable {
 			node.dataMap.put(toWrite.key, current.resolveClocks(toWrite.value));
 		}
 	}
-	private void proccessSimpleRead(SimpleRead request)
+	private void proccessSimpleRead(SimpleishRead request)
 	{
-		Client.sendMessage(node.dataMap.get(request.key), request.responsePort);
+		Client.sendMessage(new SimpleReadResponse(request.key, node.dataMap.get(request.key), node.myPortNum, request.uniqueKey), request.responsePort, 10);
 	}
 	private boolean checkIfMine(ReadRequest request)
 	{
@@ -116,7 +125,28 @@ public class MessageProcessor implements Runnable {
 			response.values = new ValueClock(null, node.myPortNum , 0);
 		}
 		Client.sendMessage(response, request.responsePort);
-		//put in read repair here
+		if (myValue != null) {
+			int uniqueKey = node.readKeyGetter.getAndIncrement();
+			node.readMap.put(uniqueKey, ConcurrentHashMap.newKeySet());
+			List<Integer> presedenceList =  node.myRing.getLocations(request.key);
+			SimpleishRead readAsk = new SimpleishRead(request.key, node.myPortNum, uniqueKey);
+			for (Integer dest : presedenceList) {
+				Client.sendMessage(readAsk, dest, 10);
+			}
+			try{
+				Thread.sleep(300);	
+			}
+			catch (InterruptedException ie) {
+				ie.printStackTrace();
+			}
+			myValue = node.dataMap.get(request.key);
+			SimpleWrite toWrite = new SimpleWrite(request.key, myValue, 0);
+			for (SimpleReadResponse resp : node.readMap.get(uniqueKey)) {
+				if(!myValue.same(resp.value)){
+					Client.sendMessage(toWrite, resp.responsePort, 10);
+				}
+			}
+		}
 	}
 	private void fowardRequest(ReadRequest request)
 	{

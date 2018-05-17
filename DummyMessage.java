@@ -1,3 +1,3 @@
 import java.io.Serializable;
-public class DummyMessage implements Serializable, Message  {
+public class DummyMessage extends Message implements Serializable  {
 }

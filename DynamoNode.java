@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.Set;
 public class DynamoNode{
 	private ServerSocket messageGetter;
 	Integer myPortNum;
@@ -16,13 +16,17 @@ public class DynamoNode{
 	boolean ignoreNext = false;
 	private ExecutorService threadPool = Executors.newFixedThreadPool(10);
 	ConcurrentHashMap<Object, ValueClock> dataMap;
+	ConcurrentHashMap<Integer, Set<SimpleReadResponse>> readMap;
 	AtomicInteger counter;
+	AtomicInteger readKeyGetter;
 	//for testing purposes
 	boolean alive = true;
 	Integer responsePort = null;
 	DynamoNode(String fileName)
 	{
 		counter = new AtomicInteger();
+		readKeyGetter = new AtomicInteger();
+		this.readMap = new ConcurrentHashMap<>();
 		myPortNum = makeNewSocket();
 		//using https://stackoverflow.com/questions/1625234/how-to-append-text-to-an-existing-file-in-java
 		String strToWrite = myPortNum.toString();
@@ -100,7 +104,7 @@ public class DynamoNode{
 	    } catch (IOException e) {
 	    	e.printStackTrace();
 	    }
-
+	    System.exit(0);
 	}
 	// private void waitForWake()
 	// {
