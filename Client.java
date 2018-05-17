@@ -23,7 +23,7 @@ public class Client {
 	private ServerSocket messageGetter;
 	private Integer portNum;
 	private ReadResponse lastRead;
-	private HashMap<Integer, Integer> sleepingNodes;
+	// private HashMap<Integer, Integer> sleepingNodes;
 	private Ring ring;
 	// private static Set<Integer> toSkip;
 	Client(String filePath)
@@ -36,7 +36,18 @@ public class Client {
 		placeInList = 0;
 		this.getPorts(filePath);
 		this.portNum = makeNewSocket();
-		sleepingNodes = new HashMap<>();
+		// sleepingNodes = new HashMap<>();
+	}
+	Client(Integer ringServer)
+	{
+		placeInList = 0;
+		this.ports = new ArrayList<Integer>();
+		ports.add(-1);
+		this.portNum = makeNewSocket();
+		this.ring = (Ring) sendWithResponse(new RingRequest(this.portNum), ringServer, 1);
+		
+		System.out.println(this.ring);
+		this.ports = this.ring.getPorts();
 	}
 	private void getPorts(String filePath)
 	{
@@ -99,7 +110,7 @@ public class Client {
 		boolean isConnected = false;
 		int howMany = tries;
 		while (!isConnected) {
-			System.out.println(howMany);
+			// System.out.println(howMany);
 			// System.out.println("failed");
 			try {
 				Socket socket = new Socket();
@@ -110,7 +121,6 @@ public class Client {
 				// System.out.println("Object to be written = " + toSend);
 				outputStream.writeObject(toSend);
 				if (tries != 0) {
-					System.out.println(howMany);
 					howMany--;
 					if (howMany <= 0) {
 						System.out.println("failed to send message");
@@ -150,7 +160,7 @@ public class Client {
 	public WriteResponse sendWrite(Object key, Object value, Integer tries, Integer targetNode)
 	{
 		WriteRequest request = new WriteRequest(key, value, this.portNum);
-		Response response = this.send(request, targetNode, tries);
+		Response response = this.sendWithResponse(request, targetNode, tries);
 		if (response.failed) {
 			return null;
 		}
@@ -158,16 +168,16 @@ public class Client {
 	}
 	public WriteResponse sendWrite(Object key, Object value, Integer tries)
 	{
-		return sendWriteWithContext(key, value, tries, getNextAddress());
+		return sendWrite(key, value, tries, getNextAddress());
 	}
 	public WriteResponse sendWriteWithContext(Object key, Object value, Integer tries)
 	{
-		return sendWrite(key, value, tries, getNextAddress());
+		return sendWriteWithContext(key, value, tries, getNextAddress());
 	}
 	public WriteResponse sendWriteWithContext(Object key, Object value, Integer tries, Integer targetNode)
 	{
 		WriteRequest request = new WriteRequest(key, value, this.portNum, lastRead);
-		Response response = this.send(request, targetNode, tries);
+		Response response = this.sendWithResponse(request, targetNode, tries);
 		if (response.failed) {
 			return null;
 		}
@@ -194,7 +204,7 @@ public class Client {
 		// return response;
 
 	}
-	public Response send(ReadRequest request, Integer targetNode, Integer tries)
+	public Response sendWithResponse(Message request, Integer targetNode, Integer tries)
 	{
 		Response response = null;
 		if (tries == 0) {
@@ -204,7 +214,7 @@ public class Client {
 		int targetsTried = this.ports.size();
 		while(! sent && targetsTried != 0){
 			
-			System.out.println("sending too" + targetNode);
+			System.out.println("sending too " + targetNode);
 			sent = sendMessage(request, targetNode, 10);
 			targetNode = this.getNextAddress();
 			targetsTried--;
@@ -214,7 +224,7 @@ public class Client {
 			return null;
 		}
 		try{
-			messageGetter.setSoTimeout(500);
+			messageGetter.setSoTimeout(600);
 			Socket socket = this.messageGetter.accept();
 			socket.setSoTimeout(500);
 			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
@@ -234,7 +244,7 @@ public class Client {
 	public ReadResponse sendRead(Object key, Integer tries, Integer targetNode)
 	{
 		ReadRequest request = new ReadRequest(key, this.portNum);
-		Response response = this.send(request, targetNode, tries);
+		Response response = this.sendWithResponse(request, targetNode, tries);
 		if (response.failed) {
 			return null;
 		}
@@ -246,38 +256,50 @@ public class Client {
 	{
 		return sendRead(key, tries, getNextAddress());
 	}
-	public void getSleepResponse(Integer toSleep)
-	{
-		try{
-			Socket socket = this.messageGetter.accept();
-			ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-			this.sleepingNodes.put(toSleep, ((SleepResponse) inStream.readObject()).tempPort);
-			socket.close();
-		} catch (SocketException se) {
-			se.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException cn) {
-			cn.printStackTrace();
-		}
-	}
+	// public void getSleepResponse(Integer toSleep)
+	// {
+	// 	try{
+	// 		Socket socket = this.messageGetter.accept();
+	// 		ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+	// 		this.sleepingNodes.put(toSleep, ((SleepResponse) inStream.readObject()).tempPort);
+	// 		socket.close();
+	// 	} catch (SocketException se) {
+	// 		se.printStackTrace();
+	// 	} catch (IOException e) {
+	// 		e.printStackTrace();
+	// 	} catch (ClassNotFoundException cn) {
+	// 		cn.printStackTrace();
+	// 	}
+	// }
 	public void send_requests()
 	{
 		boolean exit = false;
 		//used https://stackoverflow.com/questions/11871520/how-can-i-read-input-from-the-console-using-the-scanner-class-in-java/34549731
 		Scanner sc = new Scanner(System.in);
-		System.out.println("\n>");
+		// System.out.println("\n>");
+		StringBuilder log = new StringBuilder();
+		StringBuilder log2 = new StringBuilder();
+		String answer = "";
 		while(!exit)
 		{
 			String word = "";
 			System.out.print(">");
 			word = sc.nextLine();
+			log.append(word + "\n");
 			try{
 
 				if (word.startsWith("read")) {
 					String key = word.substring(word.indexOf(' ') + 1);
-					System.out.println("--"+key+"--");
-					System.out.println("****" + this.sendRead(key, 1));
+					// System.out.println("--"+key+"--");
+					answer = this.sendRead(key, 1).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
+				}
+				else if (word.startsWith("history")) {
+					System.out.println(log.toString());
+				}
+				else if (word.startsWith("ahistory")){
+					System.out.println(log2.toString());
 				}
 				else if (word.startsWith("sleep")) {
 					Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
@@ -302,26 +324,38 @@ public class Client {
 					String key = word.substring(word.indexOf(' ') + 1);
 					System.out.println(ring.getLocations(key));
 				}
-				else if (word.startsWith("wake")) {
-					Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
+				else if (word.startsWith("ring")) {
+					// Integer dest = Integer.valueOf(word.substring(word.indexOf(' ') + 1));
 					// Integer trueDest = this.sleepingNodes.get(dest);
 					// if (trueDest == null) {
 					// 	System.out.println("This client did not put that node to sleep");
 					// }
 					// else{
-						sendMessage(new WakeUpMessage(), dest);
+					this.ring = (Ring) sendWithResponse(new RingRequest(this.portNum), this.getNextAddress(), 1);
 					// }
 					// this.toSkip.remove(dest);
 				}
 				else if (word.startsWith("write")) {
 					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));
 					String value = word.substring(word.lastIndexOf(' ') + 1);;
-					System.out.println("****" + this.sendWrite(key, value, 1));
+					answer = this.sendWrite(key, value, 1).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
+				}
+				else if (word.startsWith("write")) {
+					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));
+					String value = word.substring(word.lastIndexOf(' ') + 1);;
+					answer = this.sendWrite(key, value, 1).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
 				}
 				else if (word.startsWith("tread")) {
 					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));
 					Integer destination = Integer.valueOf(word.substring(word.lastIndexOf(' ') + 1));
-					System.out.println("****" + this.sendRead(key, 1, destination));
+					answer = this.sendRead(key, 1, destination).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
+					// System.out.println("****" + this.sendRead(key, 1, destination));
 				}
 				else if (word.startsWith("twrite")) {
 					Scanner tempScanner = new Scanner(word);
@@ -329,13 +363,17 @@ public class Client {
 						String key =tempScanner.next();
 						String value = tempScanner.next();
 						Integer dest = tempScanner.nextInt();
-						System.out.println("****" + this.sendWrite(key, value, 1, dest));
+						answer = this.sendWrite(key, value, 1, dest).toString();
+						System.out.println("****" + answer);
+						log2.append(word + " " + answer + "\n");
 				}
 
 				else if (word.startsWith("cwrite")) {
 					String key = word.substring(word.indexOf(' ') + 1, word.lastIndexOf(' '));
-					String value = word.substring(word.lastIndexOf(' ') + 1);;
-					System.out.println("****" + this.sendWriteWithContext(key, value, 1));
+					String value = word.substring(word.lastIndexOf(' ') + 1);
+					answer = this.sendWriteWithContext(key, value, 1).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
 				}
 				else if (word.startsWith("tcwrite")) {
 					Scanner tempScanner = new Scanner(word);
@@ -343,7 +381,9 @@ public class Client {
 							String key =tempScanner.next();
 							String value = tempScanner.next();
 							Integer dest = tempScanner.nextInt();
-					System.out.println("****" + this.sendWriteWithContext(key, value, 1, dest));
+					answer = this.sendWriteWithContext(key, value, 1, dest).toString();
+					System.out.println("****" + answer);
+					log2.append(word + " " + answer + "\n");
 				}
 
 				else if (word.startsWith("exit")) {

@@ -6,7 +6,14 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Collections;
 import java.util.HashSet;
-public class Ring extends Message implements Serializable {
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+
+public class Ring extends Response implements Serializable {
 	ArrayList<Integer> virtualNodes;
 	HashMap<Integer, Integer> virtual_to_real;
 	Integer replicationNum;
@@ -16,7 +23,7 @@ public class Ring extends Message implements Serializable {
 	final Integer VIRTUAL_NUM = 10;
 	Ring(List<Integer> realNodes, Integer replicationNum, Integer numExtra)
 	{
-		super(-1);
+		super(false);
 		if (realNodes.size() < replicationNum + numExtra) {
 			throw new IllegalArgumentException("N must be less than or equal to the number of nodes");
 		}
@@ -47,7 +54,7 @@ public class Ring extends Message implements Serializable {
 	}
 	public HashSet<Integer> getSetLocations(Object toInsert, int extraNodes)
 	{
-		Integer key = toInsert.hashCode();
+		Integer key = hashWithMD5(toInsert);
 		// System.out.println("key is:" + key);
 		HashSet<Integer> toRet = new HashSet<Integer>(replicationNum);
 		int location = binSearch(key);
@@ -61,6 +68,51 @@ public class Ring extends Message implements Serializable {
 			}
 		}
 		return toRet;
+	}
+	public ArrayList<Integer> getPorts()
+	{
+		HashSet<Integer> ports = new HashSet<Integer>();
+		for (Integer key : this.virtual_to_real.keySet()) {
+			ports.add(this.virtual_to_real.get(key));
+		}
+		return new ArrayList<Integer>(ports);
+	}
+	private Integer hashWithMD5(Object toHash)
+	{
+		if (!(toHash instanceof Serializable)) {
+			System.out.println("using default hash");
+			return toHash.hashCode();
+		}
+		else {
+			// System.out.println("using MD5 hash");
+			MessageDigest digest = null;
+			try{
+				digest = MessageDigest.getInstance("MD5"); 
+			}catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				return -1;
+			}
+			try{
+				byte[] unhashed = convertToBytes(toHash);
+				digest.update(unhashed);
+			}
+			catch (IOException e) {
+				System.out.println("IOException using default hash");
+				return toHash.hashCode();
+			}
+			byte[] hashed = digest.digest();
+			//used https://stackoverflow.com/questions/7619058/convert-a-byte-array-to-integer-in-java-and-vice-versa
+			return hashed[0] << 24 | (hashed[1] & 0xFF) << 16 | (hashed[2] & 0xFF) << 8 | (hashed[3] & 0xFF);
+		}
+
+	}
+	//copied from https://stackoverflow.com/questions/2836646/java-serializable-object-to-byte-array
+	private byte[] convertToBytes(Object object) throws IOException {
+	    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	         ObjectOutputStream out = new ObjectOutputStream(bos)) {
+	        out.writeObject(object);
+	        return bos.toByteArray();
+	     }
 	}
 	public List<Integer> getLocations(Object toInsert, int extraNodes)
 	{

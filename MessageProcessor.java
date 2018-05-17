@@ -34,9 +34,14 @@ public class MessageProcessor implements Runnable {
 		System.out.println("messageType:" + messageType);
 		switch (messageType) {
 			case "KillMessage":
-				node.alive = false;
+				// node.alive = false;
+				node.exit();
 				break;
 			case "DummyMessage":
+			break;
+			case "RingRequest":
+				System.out.println("got request sedning ring");
+				Client.sendMessage(node.myRing, ((RingRequest) messageRecieved).ringServer, 10);
 			break;
 			case "SleepMessage":
 				// node.responsePort = ((SleepMessage) messageRecieved).responsePort;
@@ -92,7 +97,7 @@ public class MessageProcessor implements Runnable {
 			node.ignoreNext = false;
 			return;
 		}
-		System.out.println("writing: " + toWrite.value +  "from: " + node.myPortNum + "with key: " + toWrite.key);
+		System.out.println("writing: " + toWrite.value +  " from: " + node.myPortNum + " with key: " + toWrite.key);
 		ValueClock current = node.dataMap.get(toWrite.key);
 		if (current == null) {
 			node.dataMap.put(toWrite.key, toWrite.value);
@@ -124,7 +129,7 @@ public class MessageProcessor implements Runnable {
 		if (response.values == null) {
 			response.values = new ValueClock(null, node.myPortNum , 0);
 		}
-		Client.sendMessage(response, request.responsePort);
+		Client.sendMessage(response, request.responsePort, 10);
 		if (myValue != null) {
 			int uniqueKey = node.readKeyGetter.getAndIncrement();
 			node.readMap.put(uniqueKey, ConcurrentHashMap.newKeySet());
@@ -171,7 +176,7 @@ public class MessageProcessor implements Runnable {
 		if (request.context == null) {
 			//change when implimenting versioning
 			clock = new ValueClock(request.value, node.myPortNum, node.counter.getAndIncrement());
-			node.dataMap.put(request.key, clock);
+			// node.dataMap.put(request.key, clock);
 		}
 		else {
 			clock = request.context.values.maxClock(request.value, node.myPortNum, node.counter.getAndIncrement());

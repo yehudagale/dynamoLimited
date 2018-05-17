@@ -10,6 +10,8 @@ public class WriteRequest extends ReadRequest implements Serializable {
 	WriteRequest(Object key, Object value, Integer responsePort, ReadResponse context)
 	{
 		this(key, value, responsePort);
-		this.context = context;
+		if (key == context.key) {
+			this.context = context;
+		}
 	}
 }

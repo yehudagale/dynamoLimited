@@ -20,7 +20,7 @@ public class DynamoNode{
 	AtomicInteger counter;
 	AtomicInteger readKeyGetter;
 	//for testing purposes
-	boolean alive = true;
+	// boolean alive = true;
 	Integer responsePort = null;
 	DynamoNode(String fileName)
 	{
@@ -62,8 +62,9 @@ public class DynamoNode{
 			Message messageRecieved = (Message) inStream.readObject();
 			String messageType = messageRecieved.getClass().toString();
 			messageType = messageType.substring(messageType.indexOf(" ")).trim();
-			if (!(messageType.equals("Ring"))) {
-				Client.sendMessage(new RingRequest(myPortNum), messageRecieved.ringServer);
+			//used https://stackoverflow.com/questions/4584541/check-if-a-class-is-subclass-of-another-class-in-java
+			if (SimpleRead.class.isAssignableFrom(messageRecieved.getClass())) {
+				Client.sendMessage(new RingRequest(myPortNum), ((SimpleRead) messageRecieved).responsePort, 10);
 			}
 			else {
 				this.myRing = (Ring) messageRecieved;
@@ -83,7 +84,7 @@ public class DynamoNode{
 	public void acceptMessages()
 	{
 		// System.out.println(myRing.getLocations(1000));
-		while(alive)
+		while(true)
 		{
 		//used http://tutorials.jenkov.com/java-multithreaded-servers/thread-pooled-server.html			try {
 	        socket = null;
@@ -99,12 +100,15 @@ public class DynamoNode{
 	        // 	this.waitForWake();
 	        // }
 	    }
-	    try {
-	        messageGetter.close();
-	    } catch (IOException e) {
-	    	e.printStackTrace();
-	    }
-	    System.exit(0);
+	}
+	void exit()
+	{
+		try {
+		    messageGetter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.exit(0);
 	}
 	// private void waitForWake()
 	// {
@@ -158,6 +162,6 @@ public class DynamoNode{
 		System.out.println(args);
 		DynamoNode thisNode = new DynamoNode(args[0]);
 		thisNode.initialize();
-		thisNode.acceptMessages();
+		// thisNode.acceptMessages();
 	}
 }
